@@ -196,7 +196,7 @@ public class RegexTest {
                         boolean b = m.find();
                         matches[regnum][strnum] = (b == expectedMatch[regnum][strnum]);
                         timeTaken[regnum][itter][strnum] = (System.currentTimeMillis() - iterStarTime);
-                        backtracks[regnum][itter][strnum] = ((JavaClassRegexStub)m.re).getFailCount();
+                        backtracks[regnum][itter][strnum] = m.state.getFailCount();
 
                         if (debug && (itter % 1000) == 0)
                         {

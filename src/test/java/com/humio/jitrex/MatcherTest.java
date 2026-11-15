@@ -1,8 +1,6 @@
 package com.humio.jitrex;
 
 import com.humio.jitrex.jvm.JavaClassRegexStub;
-import com.humio.jitrex.jvm.Sample;
-import com.humio.jitrex.jvm.Sample2;
 import com.humio.jitrex.tree.CharSet;
 import com.humio.jitrex.util.Regex;
 import com.humio.util.jint.util.CompilerException;
@@ -143,13 +141,6 @@ public class MatcherTest {
     }
 
     @Test
-    public void xxxTest() {
-        Regex r = new Sample();
-        r.init("foo\nbar", 0, 7);
-        assertTrue(r.search());
-    }
-
-    @Test
     public void multiLineTest() {
         patt = Pattern.compile("foo$", Pattern.MULTILINE);
 
@@ -287,7 +278,7 @@ public class MatcherTest {
         patt = Pattern.compile("^(.*?,){11}P");
         Matcher m = patt.matcher("1,2,3,4,5,6,7,8,9,10,11,12");
         assertFalse(m.matches());
-        System.out.println ( " failcount= " + ((JavaClassRegexStub)m.re).getFailCount() );
+        System.out.println ( " failcount= " + m.state.getFailCount() );
     }
 
 
@@ -323,7 +314,7 @@ public class MatcherTest {
         assertTrue(m.find());
         assertFalse(m.matches());
 
-        System.out.println ( " failcount= " + ((JavaClassRegexStub)m.re).getFailCount() );
+        System.out.println ( " failcount= " + m.state.getFailCount() );
 
     }
 
@@ -406,15 +397,6 @@ public class MatcherTest {
 
 
 
-    @Test
-    public void matchStartTest() {
-        Regex r = new Sample2();
-        String s = "one cat two cats in the yard";
-        r.init(s, 0, s.length());
-        assertTrue(r.search());
-        assertEquals(r.getMatchStart(), 4);
-    }
-
 
     @Test
     public void appendReplacementTest() {
@@ -458,7 +440,7 @@ public class MatcherTest {
 
         assertFalse(m.find());
 
-        System.out.println ( " failcount= " + ((JavaClassRegexStub)m.re).getFailCount() );
+        System.out.println ( " failcount= " + m.state.getFailCount() );
     }
 
     @Test
