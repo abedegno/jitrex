@@ -1,5 +1,12 @@
 # Humio JITrex - Fast JVM Bytecode Regex Engine
 
+> **About this repository.** Humio archived [humio/jitrex](https://github.com/humio/jitrex) at
+> version 0.1.17, but kept releasing newer versions as part of LogScale. This repository continues
+> it with **version 0.1.21**, the version shipped in LogScale 1.258.3. The 0.1.21 changes were
+> recovered from the published Apache-2.0 JAR (see [Version 0.1.21](#version-0121)). Building this
+> source with JDK 11 (`-source 1.8 -target 1.8`, from the pom) gives class files identical, byte
+> for byte, to the ones in that JAR.
+
 This project is based on work done in 2000 by Peter Sorotokin as part 
 of the now defunct [Jint Programming Language](http://jint.sourceforge.net).
 Peter kindly agreed to relicense the original code under Apache License.
@@ -76,4 +83,38 @@ Based on Peter Sotorokin's work, we have
 - Added many RE2-style regex features such as `(?i:...)` group local flags, `\p{Greek}` unicode classes,
 - Made the code pass all relevant parts of the [re2j](https://github.com/google/re2j) junit tests.
 - Fixed numerous bugs in the process passing the tests.
+
+## Version 0.1.21
+
+Humio's public repository stops at 0.1.17. The 0.1.21 source in this repository was rebuilt from
+the `jitrex-0.1.21.jar` that ships, under the Apache License 2.0 (`META-INF/LICENSE.md` and
+`META-INF/NOTICE` in the JAR), with LogScale 1.258.3. The 0.1.17 files were the starting point.
+They were changed only where the 0.1.21 class files differ, and every changed file was checked by
+compiling it and comparing the result with the shipped class files. Comments in recovered code were
+taken from the 0.1.17 source where they fit. Others were written new, so the comments in changed
+files are not necessarily Humio's own.
+
+Changes from 0.1.17 to 0.1.21:
+
+- Matching state moved out of the generated regex classes into a new `jvm.MatcherState`, so a
+  compiled regex no longer holds per-match state. `Regex.init`, `search` and `matches` now take a
+  `MatcherState`, and `Matcher` keeps one per matcher.
+- Matching can be cancelled through a flag (`Matcher.setCancelledFlag`), which throws the new
+  `RegexCancelledException`. `RegexRuntimeLimitException` now extends the new
+  `JitrexRuntimeException`.
+- Input refilling was removed (`util.RegexRefiller`, `jvm.RJavaClassCustomizer`).
+- `RNode.processFlags` was split into `processFlagsGlobal` and `processFlagsLocal`. Runs of atomic
+  nodes are prepared iteratively, and repeat bounds use saturating arithmetic.
+
+Files changed or added for 0.1.21 (Apache License 2.0, section 4(b)):
+`Matcher`, `Pattern`, `JitrexRuntimeException` (new), `RegexCancelledException` (new),
+`RegexRuntimeLimitException`, `compiler/RCompiler`, `compiler/RDebugMachine`, `compiler/RMachine`,
+`jvm/JavaClassRegexStub`, `jvm/MatcherState` (new), `jvm/RJavaClassMachine`, `parser/RParser`,
+`tree/RAltNode`, `tree/RCharClassNode`, `tree/RConstNode`, `tree/RLookAheadNode`, `tree/RNode`,
+`tree/RPickNode`, `tree/RRepeatNode`, `util/CaseInsensitiveRegex`, `util/ProxyRegex`, `util/Regex`,
+`util/Replacer` (under `com.humio.jitrex`) and `com.humio.util.jint.lang.CharString`.
+
+The 0.1.21 tests were not published. The 0.1.17 tests were updated for the new API: the failure
+count is read from `MatcherState`. Two tests that used hand-decompiled copies of 0.1.17 generated
+classes (`jvm/Sample`, `jvm/Sample2`) were removed. All 499 remaining tests pass.
 
