@@ -70,7 +70,7 @@
         <repository>
             <id>github</id>
             <name>Humio Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/humio/jitrex</url>
+            <url>https://maven.pkg.github.com/abedegno/jitrex</url>
         </repository>
     </distributionManagement>
 </project>
