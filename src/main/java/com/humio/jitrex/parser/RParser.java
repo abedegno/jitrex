@@ -84,7 +84,7 @@ public class RParser implements CharClassCodes, MiniErrorCodes {
             throw new CompilerException(ERR_R_EXTRABRACKET, index);
         RNode res = head==null ? new REmptyNode(offset) : head;
         if (res != null)
-            res.processFlags(flags);
+            res.processFlagsGlobal(flags);
         refList = new Hashtable<>();
         pickList = new Hashtable<>();
         if (res != null) {

@@ -6,6 +6,7 @@
 */
 package com.humio.jitrex.util;
 
+import com.humio.jitrex.jvm.MatcherState;
 import com.humio.util.jint.lang.ArgList;
 import com.humio.util.jint.lang.CharString;
 
@@ -75,20 +76,6 @@ public class Replacer {
         }
     }
 
-    public Replacer cloneReplacer() {
-        try {
-            Replacer rep = (Replacer) super.clone();
-            rep.regex = regex.cloneRegex();
-            return rep;
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("Internal error: " + e);
-        }
-    }
-
-    public Object clone() {
-        return cloneReplacer();
-    }
-
     public String process(String s) {
         int first = 0;
         int last = s.length();
@@ -122,11 +109,12 @@ public class Replacer {
     }
 
     public String process(CharSequence arr, int first, int last, Object[] extVars) {
+        MatcherState state = new MatcherState(regex);
         boolean global = ((flags & GLOBAL_FLAG) != 0);
-        regex.init(arr, first, last);
+        regex.init(state, arr, first, last);
         Vector<Substitution> substList = null;
         int k = 0;
-        while (regex.search()) {
+        while (regex.search(state)) {
             if (substList == null)
                 substList = new Vector<>();
             Substitution substitution = new Substitution();
@@ -140,15 +128,15 @@ public class Replacer {
                                     "Need value for external variable " + form.getVariables()[i]);
                         args[i] = extVars[k++];
                     } else {
-                        int begin = regex.getIndex(handles[0]);
-                        int end = regex.getIndex(handles[1]);
+                        int begin = state.getIndex(handles[0]);
+                        int end = state.getIndex(handles[1]);
                         args[i] = new CharString(arr.toString().toCharArray(), begin, end - begin);
                     }
                 }
                 substitution.args = args;
             }
-            substitution.begin = regex.getMatchStart();
-            substitution.end = regex.getMatchEnd();
+            substitution.begin = state.getMatchStart();
+            substitution.end = state.getMatchEnd();
             substList.addElement(substitution);
             if (!global)
                 break;

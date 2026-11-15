@@ -47,6 +47,10 @@ public final class Pattern implements Serializable {
         return false;
     }
 
+    Regex getRegex() {
+        return regex;
+    }
+
     public int flags() {
         return flags;
     }
@@ -209,7 +213,7 @@ public final class Pattern implements Serializable {
     public Set<String> variables() { return exts.keySet(); }
 
     public Matcher matcher(CharSequence input) {
-        return new Matcher(this, input, regex.cloneRegex(), varMap, exts);
+        return new Matcher(this, input, regex, varMap, exts);
     }
 
     public static boolean matches(String regex, CharSequence input) {

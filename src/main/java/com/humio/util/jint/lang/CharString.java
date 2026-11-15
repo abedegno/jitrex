@@ -6,6 +6,7 @@
 */
 package com.humio.util.jint.lang;
 
+import com.humio.jitrex.jvm.MatcherState;
 import com.humio.jitrex.util.Regex;
 
 /**
@@ -454,23 +455,23 @@ public class CharString {
     }
 
     public boolean matches(Regex regex) {
-        return regex.matches(new String(buf, first, last - first));
+        return regex.matches(new MatcherState(regex), new String(buf, first, last - first));
     }
 
     public boolean matches(Regex regex, int off, int len) {
         if (first + len > last)
             throw new IndexOutOfBoundsException(String.valueOf(first + len));
-        return regex.matches(new String(buf, first + off, len));
+        return regex.matches(new MatcherState(regex), new String(buf, first + off, len));
     }
 
     public boolean hasMatch(Regex regex) {
-        return regex.searchOnce(new String(buf, first, last - first));
+        return regex.searchOnce(new MatcherState(regex), new String(buf, first, last - first));
     }
 
     public boolean hasMatch(Regex regex, int off, int len) {
         if (first + len > last)
             throw new IndexOutOfBoundsException(String.valueOf(first + len));
-        return regex.searchOnce(new String(buf, first + off, len));
+        return regex.searchOnce(new MatcherState(regex), new String(buf, first + off, len));
     }
 
     public int intValue() {

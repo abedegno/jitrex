@@ -5,6 +5,8 @@
 */
 package com.humio.jitrex.util;
 
+import com.humio.jitrex.jvm.MatcherState;
+
 import java.util.Enumeration;
 
 public class ProxyRegex extends Regex {
@@ -15,95 +17,57 @@ public class ProxyRegex extends Regex {
         regex = orig;
     }
 
+    @Override
     public int getVariableHandle(String var, boolean begin) {
         return regex.getVariableHandle(var, begin);
     }
 
+    @Override
     public int getExtVariableHandle(String var) {
         return regex.getExtVariableHandle(var);
     }
 
+    @Override
     public Enumeration<String> variables() {
         return regex.variables();
     }
 
-    public void init(CharSequence subject, int off, int len) {
-        regex.init(subject, off, len);
-    }
-
-    public boolean searchAgain() {
-        return regex.searchAgain();
-    }
-
-    public boolean search() {
-        return regex.search();
-    }
-
-    public boolean search(int from) {
-        return regex.search(from);
-    }
-
-    public boolean match() {
-        return regex.match();
-    }
-
-    public boolean matchWhole() {
-        return regex.matchWhole();
-    }
-
-    public int getIndex(int handle) {
-        return regex.getIndex(handle);
-    }
-
-    public void setIndex(int handle, int value) {
-        regex.setIndex(handle, value);
-    }
-
-    public CharSequence getCharBuffer(int extHandle) {
-        return regex.getCharBuffer(extHandle);
-    }
-
-    public int getMatchStart() {
-        return regex.getMatchStart();
-    }
-
-    public int getMatchEnd() {
-        return regex.getMatchEnd();
-    }
-
-    public void setExtVariableBuffer(int extHandle, CharSequence arr) {
-        regex.setExtVariableBuffer(extHandle, arr);
-    }
-
-    public void setRefiller(RegexRefiller refiller) {
-        regex.setRefiller(refiller);
-    }
-
-    public void setRefilledBuffer(CharSequence buffer) {
-        regex.setRefilledBuffer(buffer);
-    }
-
-    public Regex cloneRegex() {
-        ProxyRegex clone = (ProxyRegex) super.cloneRegex();
-        clone.regex = regex.cloneRegex();
-        return clone;
+    @Override
+    public void init(MatcherState state, CharSequence subject, int off, int len) {
+        regex.init(state, subject, off, len);
     }
 
     @Override
-    public void setBackTrackLimit(int i) {
-        regex.setBackTrackLimit(i);
+    public int getCellCount() {
+        return regex.getCellCount();
     }
 
     @Override
-    public int getBackTrackLimit() {
-        return regex.getBackTrackLimit();
+    public boolean searchAgain(MatcherState state) {
+        return regex.searchAgain(state);
     }
 
     @Override
-    public int getBackTrackCount() {
-        return regex.getBackTrackCount();
+    public boolean search(MatcherState state) {
+        return regex.search(state);
     }
 
+    @Override
+    public boolean search(MatcherState state, int from) {
+        return regex.search(state, from);
+    }
+
+    @Override
+    public boolean match(MatcherState state) {
+        return regex.match(state);
+    }
+
+    @Override
+    public boolean matchWhole(MatcherState state) {
+        return regex.matchWhole(state);
+    }
+
+    @Override
     public String toString() {
         return regex.toString();
     }

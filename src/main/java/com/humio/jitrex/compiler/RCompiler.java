@@ -25,7 +25,7 @@ public class RCompiler extends RContext {
 
     RMachine gen;
 
-    boolean charStarHead = false;
+    RRepeatNode charStarHead = null;
 
     public RCompiler() {
         this(new RDebugMachine());
@@ -194,8 +194,7 @@ public class RCompiler extends RContext {
         RNode body = regexRepeat.body;
         int min = regexRepeat.min;
         int max = regexRepeat.max;
-        boolean doingCharStarHead = charStarHead;
-        charStarHead = false;
+        boolean isCharStarHead = regexRepeat == charStarHead;
         if (min > 0) {
             RVariable count = null;
             RLabel repeat = null;
@@ -220,11 +219,11 @@ public class RCompiler extends RContext {
                 if (minBodyLength != 0 && minBodyLength == maxBodyLength &&
                         (gen.getExtensions() & RMachine.EXT_MULTIFORK) != 0 &&
                         !body.hasPicks() && !body.hasForks()) {
-                    gen.mfStart(minBodyLength, (doingCharStarHead ? min : -1));
+                    gen.mfStart(minBodyLength, (isCharStarHead ? min : -1));
                     body.eval(this);
                     if (minCharLeftAfter > MIN_CHAR_LEFT && (gen.getExtensions() & RMachine.EXT_CONDJUMP) != 0)
                         gen.condJump(minCharLeftAfter, Integer.MAX_VALUE, null);
-                    gen.mfEnd(max);
+                    gen.mfEnd(max, isCharStarHead);
                 } else {
                     RLabel other = gen.newLabel();
                     RVariable count = null;
@@ -291,7 +290,7 @@ public class RCompiler extends RContext {
 
     public void compile(RNode node, String name) {
         gen.tellName(name);
-        charStarHead = false;
+        charStarHead = null;
         RConstNode beginShiftTable = null;
         int hints = 0;
         if (node.isStartAnchored() && (gen.getExtensions() & RMachine.FLAG_MULTILINE) == 0)
@@ -309,7 +308,7 @@ public class RCompiler extends RContext {
                         (body instanceof RCharClassNode ||
                                 body instanceof RConstNode || body instanceof RAnyNode) &&
                         body.minLength == 1 && body.maxLength == 1) {
-                    charStarHead = true;
+                    charStarHead = (RRepeatNode) p;
                     hints |= RMachine.HINT_CHAR_STAR_HEAD;
                 }
             }

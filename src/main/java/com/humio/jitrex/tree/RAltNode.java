@@ -73,12 +73,12 @@ public class RAltNode extends RNode {
         return super.hasPicks();
     }
 
-    public void processFlags(int flags) {
-        super.processFlags(flags);
+    public void processFlagsGlobal(int flags) {
+        super.processFlagsGlobal(flags);
         if (alt1 != null)
-            alt1.processFlags(flags);
+            alt1.processFlagsGlobal(flags);
         if (alt2 != null)
-            alt2.processFlags(flags);
+            alt2.processFlagsGlobal(flags);
     }
 
     public boolean hasForks() {

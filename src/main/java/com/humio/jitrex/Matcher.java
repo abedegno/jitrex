@@ -5,32 +5,33 @@
 */
 package com.humio.jitrex;
 
+import com.humio.jitrex.jvm.MatcherState;
 import com.humio.jitrex.util.Regex;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Matcher {
     private final Pattern pattern;
     protected CharSequence input;
     protected final Regex re;
+    protected final MatcherState state;
     private final Map<String, Pattern.VarEntry> varMap;
     private final Map<String, Pattern.VarEntry> exts;
     private final Pattern.VarEntry[] indexed;
+    private static final Pattern.VarEntry[] EMPTY_INDEXED = new Pattern.VarEntry[0];
 
     int lastEnd = 0;
 
     public Matcher(Pattern p, CharSequence input) {
-
-        if (input == null || p == null) {
-            throw new NullPointerException();
-        }
-
         this.pattern = p;
         this.input = input;
-        this.re = null;
-        this.varMap = new HashMap<>();
-        this.exts = new HashMap<>();
-        this.indexed = new Pattern.VarEntry[0];
+        this.re = p.getRegex();
+        this.state = new MatcherState(re);
+        this.varMap = Collections.emptyMap();
+        this.exts = Collections.emptyMap();
+        this.indexed = EMPTY_INDEXED;
+        reset(input);
     }
 
     public Matcher(Pattern pattern, CharSequence input, Regex re, Map<String, Pattern.VarEntry> varMap, Map<String,Pattern.VarEntry> exts) {
@@ -38,6 +39,7 @@ public class Matcher {
         this.pattern = pattern;
         this.input = input;
         this.re = re;
+        this.state = new MatcherState(re);
         this.varMap = varMap;
         this.exts = exts;
 
@@ -52,7 +54,7 @@ public class Matcher {
         reset( input );
     }
 
-    private static Map<String,String> EMPTY_MAP = new HashMap<>();
+    private static Map<String,String> EMPTY_MAP = Collections.EMPTY_MAP;
 
     public void reset() {
         reset(input, EMPTY_MAP);
@@ -62,22 +64,21 @@ public class Matcher {
         reset(input, vars);
     }
 
-    public void reset(CharSequence seq) {
+    public final void reset(CharSequence seq) {
         reset(seq, EMPTY_MAP);
     }
 
     public void reset(CharSequence seq, Map<String,String> vars) {
         this.input = seq;
         this.lastEnd = 0;
-        for (String key : vars.keySet()
-             ) {
+        for (String key : vars.keySet()) {
             assign(key, vars.get(key).toLowerCase());
         }
 
-        re.init(seq, 0, seq.length());
-
         from = 0;
         to = seq.length();
+        re.init(state, seq, 0, to);
+
         lastAppend = 0;
         first = -1;
         last = 0;
@@ -98,8 +99,8 @@ public class Matcher {
     private boolean aftermatch(boolean success) {
         matches = success;
         if (success) {
-            first = re.getMatchStart();
-            last = re.getMatchEnd();
+            first = state.getMatchStart();
+            last = state.getMatchEnd();
         } else {
             first = -1;
         }
@@ -109,7 +110,7 @@ public class Matcher {
 
     public boolean matches() {
         lastEnd = 0;
-        return aftermatch( re.matchesWhole(input) );
+        return aftermatch( re.matchesWhole(state, input) );
     }
 
 
@@ -118,12 +119,12 @@ public class Matcher {
 
         lastEnd = last;
 
-        boolean success = aftermatch( re.search() );
+        boolean success = aftermatch( re.search(state) );
 
         // for some reason, JINT jitrex may match the empty string at
         // the end of the previous match.
         if (success && last == lastEnd && last != 0) {
-            success = aftermatch( re.search() );
+            success = aftermatch( re.search(state) );
         }
 
         return success;
@@ -138,11 +139,11 @@ public class Matcher {
         if ((start < 0) || (start > limit))
             throw new IndexOutOfBoundsException("Illegal start index");
         reset();
-        return aftermatch( re.search(start) );
+        return aftermatch( re.search(state, start) );
     }
 
     public boolean lookingAt() {
-        return aftermatch( re.match() );
+        return aftermatch( re.match(state) );
     }
 
     public int start() {
@@ -186,7 +187,7 @@ public class Matcher {
         if (groupNo == 0) {
             return start();
         } else {
-            return re.getIndex(indexed[groupNo - 1].start);
+            return state.getIndex(indexed[groupNo - 1].start);
         }
     }
 
@@ -197,7 +198,7 @@ public class Matcher {
         if (groupNo == 0) {
             return end();
         } else {
-            return re.getIndex(indexed[groupNo - 1].end);
+            return state.getIndex(indexed[groupNo - 1].end);
         }
     }
 
@@ -207,8 +208,8 @@ public class Matcher {
             return null; // TODO?
         }
 
-        int start = re.getIndex(ent.start);;
-        int end = re.getIndex(ent.end);;
+        int start = state.getIndex(ent.start);;
+        int end = state.getIndex(ent.end);;
         return input.subSequence(start, end).toString();
     }
 
@@ -345,16 +346,24 @@ public class Matcher {
     }
 
     public void setBacktrackLimit(int i) {
-        re.setBackTrackLimit(i);
+        state.setBackTrackLimit(i);
     }
 
     public int getBacktrackLimit() {
-        return re.getBackTrackLimit();
+        return state.getBackTrackLimit();
     }
 
     /** return number of backtrack operations used (after match/find) */
     public int getBacktrackCount() {
-        return re.getBackTrackCount();
+        return state.getBackTrackCount();
+    }
+
+    /**
+     * Sets the flag that is checked on every backtrack; when it is true, matching
+     * throws {@link RegexCancelledException}. Returns the flag that was set before.
+     */
+    public AtomicBoolean setCancelledFlag(AtomicBoolean v) {
+        return state.setCancelledFlag(v);
     }
 
     abstract static class Appender {

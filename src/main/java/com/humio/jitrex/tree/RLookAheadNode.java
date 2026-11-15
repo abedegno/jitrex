@@ -59,10 +59,10 @@ public class RLookAheadNode extends RNode {
     }
 
     @Override
-    public void processFlags(int flags) {
-        super.processFlags(flags);
+    public void processFlagsGlobal(int flags) {
+        super.processFlagsGlobal(flags);
         if (body != null)
-            body.processFlags(flags);
+            body.processFlagsGlobal(flags);
     }
 
     public boolean hasForks() {

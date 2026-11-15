@@ -40,22 +40,12 @@ public class RRepeatNode extends RNode {
             addMinLeft = tail.minLeft;
         }
 
-        body.prepare(0, 0); // this will only calculate lengths
+        body.prepare(addMaxLeft, addMinLeft);
 
         int minl = minTotalLength(body);
-        minLength = min * minl;
+        minLength = mulSaturated(minl, min);
         int maxl = maxTotalLength(body);
-        if (maxl < Short.MAX_VALUE && max < Short.MAX_VALUE)
-            maxLength = maxl * max;
-        else
-            maxLength = Integer.MAX_VALUE;
-
-        if (addMaxLeft < Integer.MAX_VALUE
-                && maxLength < Integer.MAX_VALUE
-                && addMaxLeft + maxLength > 0)
-            body.prepare(addMaxLeft + maxLength - maxl, addMinLeft + (min == 0 ? 0 : minLength - minl));
-        else
-            body.prepare(Integer.MAX_VALUE, addMinLeft + (min > 1 ? (min - 1) * minl : 0));
+        maxLength = mulSaturated(maxl, max);
 
         finishPrepare(addMaxLeft, addMinLeft);
     }
@@ -71,9 +61,9 @@ public class RRepeatNode extends RNode {
     }
 
     @Override
-    public void processFlags(int flags) {
-        super.processFlags(flags);
-        body.processFlags(flags);
+    public void processFlagsGlobal(int flags) {
+        super.processFlagsGlobal(flags);
+        body.processFlagsGlobal(flags);
     }
 
     public boolean hasPicks() {

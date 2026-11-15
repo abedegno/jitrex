@@ -31,14 +31,14 @@ public class RPickNode extends RNode {
     }
 
     @Override
-    public void processFlags(int flags) {
+    public void processFlagsGlobal(int flags) {
         if (begin) {
             this.saveFlags = flags;
             flags = (flags | setflags) & ~clearflags;
         } else if (!keepFlagsAfter) {
             flags = start.saveFlags;
         }
-        super.processFlags(flags);
+        super.processFlagsGlobal(flags);
     }
 
     public int getNCells() {

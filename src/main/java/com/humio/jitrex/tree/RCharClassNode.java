@@ -34,8 +34,8 @@ public class RCharClassNode extends RNode {
     }
 
     @Override
-    public void processFlags(int flags) {
-        super.processFlags(flags);
+    public void processFlagsLocal(int flags) {
+        super.processFlagsLocal(flags);
         if (isLowercase()) {
             charClass = charClass.toLowerCase();
         }
@@ -44,4 +44,8 @@ public class RCharClassNode extends RNode {
     public Object eval(RContext context) {
         return context.evalRCharClass(this);
     }
+
+
+    /** Matches a single character; see {@link RNode#isAtomic()}. */
+    public boolean isAtomic() { return true; }
 }

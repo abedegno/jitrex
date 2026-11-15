@@ -5,6 +5,8 @@
 */
 package com.humio.jitrex.util;
 
+import com.humio.jitrex.jvm.MatcherState;
+
 import java.util.Enumeration;
 
 public class CaseInsensitiveRegex extends ProxyRegex {
@@ -56,11 +58,11 @@ public class CaseInsensitiveRegex extends ProxyRegex {
         }
     }
 
-    public void init(CharSequence subject, int off, int len) {
-        init(-1, subject, off, len);
+    public void init(MatcherState state, CharSequence subject, int off, int len) {
+        init(state, -1, subject, off, len);
     }
 
-    private void init(int extHandle, CharSequence arr, int off, int len) {
+    private void init(MatcherState state, int extHandle, CharSequence arr, int off, int len) {
         int i = off;
         int last = off + len;
         char c;
@@ -74,45 +76,21 @@ public class CaseInsensitiveRegex extends ProxyRegex {
         if (i == last)
             if (extHandle < 0) {
                 matchOff = 0;
-                super.init(arr, off, len);
+                super.init(state, arr, off, len);
             } else {
                 extOff[extHandle] = 0;
-                super.setExtVariableBuffer(extHandle, arr);
+                state.setExtVariableBuffer(extHandle, arr);
             }
         else {
             CharSequence buf = new LoweCaseCharSequence(arr);
             if (extHandle < 0) {
                 matchOff = off;
-                super.init(buf, 0, len);
+                super.init(state, buf, 0, len);
             } else {
                 extOff[extHandle] = 0;
-                super.setExtVariableBuffer(extHandle, buf);
+                state.setExtVariableBuffer(extHandle, buf);
             }
         }
-    }
-
-    public int getIndex(int handle) {
-        int eh = handleToExtHandle[handle];
-        if (eh < 0)
-            return super.getIndex(handle) + matchOff;
-        else
-            return super.getIndex(handle) + extOff[eh];
-    }
-
-    public void setIndex(int handle, int index) {
-        int eh = handleToExtHandle[handle];
-        if (eh < 0)
-            super.setIndex(handle, index - matchOff);
-        else
-            super.setIndex(handle, index - extOff[eh]);
-    }
-
-    public int getMatchStart() {
-        return super.getMatchStart() + matchOff;
-    }
-
-    public int getMatchEnd() {
-        return super.getMatchEnd() + matchOff;
     }
 
     public CharSequence getCharBuffer(int extHandle) {
@@ -121,8 +99,8 @@ public class CaseInsensitiveRegex extends ProxyRegex {
         return extBuf[extHandle];
     }
 
-    public void setExtVariableBuffer(int extHandle, CharSequence arr) {
-        init(extHandle, arr, 0, arr.length());
+    public void setExtVariableBuffer(MatcherState state, int extHandle, CharSequence arr) {
+        init(state, extHandle, arr, 0, arr.length());
     }
 
     public String toString() {

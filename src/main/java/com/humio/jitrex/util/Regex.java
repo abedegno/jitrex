@@ -5,6 +5,7 @@
 */
 package com.humio.jitrex.util;
 
+import com.humio.jitrex.jvm.MatcherState;
 import com.humio.util.jint.lang.CharString;
 
 import java.io.File;
@@ -32,10 +33,10 @@ import java.util.Enumeration;
  * may be assigned values in the process of matching and their values can be
  * obtained from the jitrex that was used for search or matching.
  * <p>
- * Regex contains some "working space" for the matching process. Therefore
- * between the match/search call and till all information about match/search is
- * obtained jitrex should be used only by a single thread. Use clone() or
- * cloneRegex() to get a separate copy of it.
+ * The "working space" for the matching process is kept in a {@link MatcherState},
+ * which is passed to init, match and search and from which the results
+ * (match position, variable indices) are read. A MatcherState should be used
+ * only by a single thread; create one per concurrent match.
  * <p>
  * All 'end' or 'final' substring positions or indices in the buffer refer to the first
  * character <b>after</b> substring.
@@ -148,7 +149,7 @@ public abstract class Regex implements Cloneable, FilenameFilter {
      * Prepares to match or search. Sets up an input buffer and a range of characters in it
      * that is to be searched or matched.
      */
-    abstract public void init(CharSequence subject, int off, int len);
+    abstract public void init(MatcherState state, CharSequence subject, int off, int len);
 
     /**
      * Search the buffer (that was set up by init method) for a substring that matches
@@ -160,7 +161,7 @@ public abstract class Regex implements Cloneable, FilenameFilter {
      *
      * @returns value indicating if matching substring is found.
      */
-    abstract public boolean searchAgain();
+    abstract public boolean searchAgain(MatcherState state);
 
     /**
      * Search the buffer (that was set up by init method) for a substring that matches
@@ -171,8 +172,8 @@ public abstract class Regex implements Cloneable, FilenameFilter {
      *
      * @returns value indicating if matching substring is found.
      */
-    abstract public boolean search();
-    abstract public boolean search(int from);
+    abstract public boolean search(MatcherState state);
+    abstract public boolean search(MatcherState state, int from);
 
     /**
      * Match the buffer (that was set up by init method) against
@@ -180,7 +181,7 @@ public abstract class Regex implements Cloneable, FilenameFilter {
      *
      * @returns value indicating if matching was successful.
      */
-    abstract public boolean matchWhole();
+    abstract public boolean matchWhole(MatcherState state);
 
     /**
      * Match the beginning of the buffer (that was set up by init method) against
@@ -188,125 +189,77 @@ public abstract class Regex implements Cloneable, FilenameFilter {
      *
      * @returns value indicating if matching was successful.
      */
-    abstract public boolean match();
-
-    /**
-     * Returns external or internal variable index using its index handle. Every variable
-     * has two indices - 'begin' and 'end'. Use 'begin' and 'end' handles to get them.
-     * These indices can be used to determine which part of the input buffer (set by init method)
-     * corresponding internal variable matched. An external variable 'begin' and 'end' indices
-     * point to its own buffer. They are assinged by setIndex and are never changed.
-     */
-    abstract public int getIndex(int handle);
+    abstract public boolean match(MatcherState state);
 
     //--------- convenience methods ----------------
 
-    /**
-     * Returns internal variable index using its index handle. Every variable
-     * has two indices - 'begin' and 'end'. Use 'begin' and 'end' handles to assign them.
-     * These indices are needed to completely specify value of an external variable.
-     */
-    abstract public void setIndex(int handle, int value);
-
-    /**
-     * Returns external variable buffer by its buffer handle. If -1 is passed as a handle
-     * the input buffer that was set up for matching (using init) is returned.
-     */
-    abstract public CharSequence getCharBuffer(int extHandle);
-
-    /**
-     * After successiful search returns matching substring's initial position in
-     * the input buffer (that was set up by init method).
-     */
-    abstract public int getMatchStart();
-
-    /**
-     * After successiful search returns matching substring's final position in
-     * the input buffer (that was set up by init method).
-     */
-    abstract public int getMatchEnd();
-
-    /**
-     * Assignes external variable buffer by its buffer handle.
-     * It is needed to completely specify value of an external variable.
-     */
-    abstract public void setExtVariableBuffer(int extHandle, CharSequence arr);
-
-    abstract public void setRefiller(RegexRefiller refiller);
-
-    /**
-     * Refiller can call this method after refilling the buffer,
-     * if buffer has been reallocated.
-     */
-    abstract public void setRefilledBuffer(CharSequence buffer);
-
-    public boolean matches(CharSequence arr, int off, int len) {
-        init(arr, off, len);
-        return match();
+    public boolean matches(MatcherState state, CharSequence arr, int off, int len) {
+        init(state, arr, off, len);
+        return match(state);
     }
 
-    public boolean matches(CharSequence s) {
-        init(s, 0, s.length());
-        return match();
+    public boolean matches(MatcherState state, CharSequence s) {
+        init(state, s, 0, s.length());
+        return match(state);
     }
 
-    public boolean matchesWhole(CharSequence arr, int off, int len) {
-        init(arr, off, len);
-        return matchWhole();
+    public boolean matchesWhole(MatcherState state, CharSequence arr, int off, int len) {
+        init(state, arr, off, len);
+        return matchWhole(state);
     }
 
-    public boolean matchesWhole(CharSequence s) {
-        init(s, 0, s.length());
-        return matchWhole();
+    public boolean matchesWhole(MatcherState state, CharSequence s) {
+        init(state, s, 0, s.length());
+        return matchWhole(state);
     }
 
-    public boolean searchOnce(CharSequence arr, int off, int len) {
-        init(arr, off, len);
-        return search();
+    public boolean searchOnce(MatcherState state, CharSequence arr, int off, int len) {
+        init(state, arr, off, len);
+        return search(state);
     }
 
-    public boolean searchOnce(String s) {
-        init(s, 0, s.length());
-        return search();
+    public boolean searchOnce(MatcherState state, String s) {
+        init(state, s, 0, s.length());
+        return search(state);
     }
 
-    public boolean searchOnce(CharString s) {
+    public boolean searchOnce(MatcherState state, CharString s) {
         String ss = new String(s.buf, s.first, s.last - s.first);
-        init(ss, 0, ss.length());
-        return search();
+        init(state, ss, 0, ss.length());
+        return search(state);
     }
 
-    public boolean searchOnce(Object obj) {
+    public boolean searchOnce(MatcherState state, Object obj) {
         if (obj instanceof CharString) {
             CharString s = (CharString) obj;
-            return searchOnce(s);
+            return searchOnce(state, s);
         } else if (obj instanceof char[]) {
             char[] s = (char[]) obj;
-            return searchOnce(new String(s));
+            return searchOnce(state, new String(s));
         } else if (obj instanceof CharSequence) {
-            return searchOnce((CharSequence)obj);
+            return searchOnce(state, (CharSequence)obj);
         } else {
             String s = obj.toString();
-            return searchOnce(s);
+            return searchOnce(state, s);
         }
     }
 
-    public void setExtVariable(int extHandle, int beginHandle, int endHandle, String v) {
-        setExtVariableBuffer(extHandle, v);
-        setIndex(beginHandle, 0);
-        setIndex(endHandle, v.length());
+    public void setExtVariable(MatcherState state, int extHandle, int beginHandle, int endHandle, String v) {
+        state.setExtVariableBuffer(extHandle, v);
+        state.setIndex(beginHandle, 0);
+        state.setIndex(endHandle, v.length());
     }
 
-    public void setExtVariable(int extHandle, int beginHandle, int endHandle, CharString v) {
-        setExtVariableBuffer(extHandle, new String(v.buf));
-        setIndex(beginHandle, v.first);
-        setIndex(endHandle, v.last);
+    public void setExtVariable(MatcherState state, int extHandle, int beginHandle, int endHandle, CharString v) {
+        state.setExtVariableBuffer(extHandle, new String(v.buf));
+        state.setIndex(beginHandle, v.first);
+        state.setIndex(endHandle, v.last);
     }
 
-    public void setExtVariable(int extHandle, int beginHandle, int endHandle, char[] carr) {
-        setExtVariableBuffer(extHandle, new String(carr));
-        setIndex(beginHandle, 0);
-        setIndex(endHandle, carr.length);
+    public void setExtVariable(MatcherState state, int extHandle, int beginHandle, int endHandle, char[] carr) {
+        state.setExtVariableBuffer(extHandle, new String(carr));
+        state.setIndex(beginHandle, 0);
+        state.setIndex(endHandle, carr.length);
     }
 
     public void setExtVariable(int extHandle, int beginHandle, int endHandle, Object v) {
@@ -320,62 +273,49 @@ public abstract class Regex implements Cloneable, FilenameFilter {
             setExtVariable(extHandle, beginHandle, endHandle, v.toString());
     }
 
-    public CharSequence getMatch() {
-        CharSequence cbuf = getCharBuffer(-1);
-        int start = getMatchStart();
-        return cbuf.subSequence(start, getMatchEnd());
+    public CharSequence getMatch(MatcherState state) {
+        CharSequence cbuf = state.getCharBuffer(-1);
+        int start = state.getMatchStart();
+        return cbuf.subSequence(start, state.getMatchEnd());
     }
 
-    public String getMatchString() {
-        return getMatch().toString();
+    public String getMatchString(MatcherState state) {
+        return getMatch(state).toString();
     }
 
-    public String get(String var) {
-        int begin = getIndex(getVariableHandle(var, true));
-        int end = getIndex(getVariableHandle(var, false));
+    public String get(MatcherState state, String var) {
+        int begin = state.getIndex(getVariableHandle(var, true));
+        int end = state.getIndex(getVariableHandle(var, false));
         if (begin < 0 || end < 0 || end < begin)
             return null;
         int ext = getExtVariableHandle(var);
-        return getCharBuffer(ext).toString();
+        return state.getCharBuffer(ext).toString();
     }
 
-    public void set(String var, String val) {
+    public void set(MatcherState state, String var, String val) {
         int ext = getExtVariableHandle(var);
         if (ext < 0)
             throw new IllegalArgumentException("No external variable " + var);
         int begin = getVariableHandle(var, true);
         int end = getVariableHandle(var, false);
-        setExtVariableBuffer(ext, val);
-        setIndex(begin, 0);
-        setIndex(end, val.length());
+        state.setExtVariableBuffer(ext, val);
+        state.setIndex(begin, 0);
+        state.setIndex(end, val.length());
     }
 
-    public Regex cloneRegex() {
-        try {
-            return (Regex) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("Internal error: " + e);
-        }
+    public void init(MatcherState state, char[] arr) {
+        init(state, new String(arr), 0, arr.length);
     }
 
-    public void init(char[] arr) {
-        init(new String(arr), 0, arr.length);
-    }
-
-    public void init(String s) {
-        init(s, 0, s.length());
-    }
-
-    public Object clone() {
-        return cloneRegex();
+    public void init(MatcherState state, String s) {
+        init(state, s, 0, s.length());
     }
 
     public boolean accept(File dir, String name) {
-        return matchesWhole(name);
+        return matchesWhole(new MatcherState(this), name);
     }
 
-    public abstract void setBackTrackLimit(int i);
-    public abstract int getBackTrackLimit();
-    public abstract int getBackTrackCount();
+    /** Number of variable cells a {@link MatcherState} needs for this regex. */
+    public abstract int getCellCount();
 
 }

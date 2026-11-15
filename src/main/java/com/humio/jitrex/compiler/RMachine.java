@@ -203,7 +203,7 @@ public abstract class RMachine {
     /**
      * maxCount got minCount subtracted from it!
      */
-    public void mfEnd(int maxCount) {
+    public void mfEnd(int maxCount, boolean isCharStartHead) {
         throw new IllegalArgumentException("MULTIFORK extension is not implemented");
     }
 

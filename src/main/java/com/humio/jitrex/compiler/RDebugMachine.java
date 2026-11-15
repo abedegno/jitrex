@@ -159,7 +159,7 @@ public class RDebugMachine extends RMachine {
                 " (" + minCount + ")");
     }
 
-    public void mfEnd(int maxCount) {
+    public void mfEnd(int maxCount, boolean isCharStartHead) {
         out.println("\tmfEnd " + (maxCount < Integer.MAX_VALUE ? "" + maxCount : "*"));
     }
 
